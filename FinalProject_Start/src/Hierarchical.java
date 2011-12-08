@@ -17,6 +17,9 @@ import javax.vecmath.Vector3f;
 
 import com.sun.opengl.util.BufferUtil;
 import com.sun.opengl.util.FPSAnimator;
+import com.sun.opengl.util.texture.Texture;
+import com.sun.opengl.util.texture.TextureData;
+import com.sun.opengl.util.texture.TextureIO;
 
 import java.util.ArrayList;
 
@@ -197,6 +200,10 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		case 'R':
 			initViewParameters();
 			break;
+		case 't':
+		case 'T':
+			secondViewParameters();
+			break;
 		case 'w':
 		case 'W':
 			wireframe = ! wireframe;
@@ -211,6 +218,14 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 			break;
 		case 'a':
 		case 'A':
+			bunnyXPosition-=.1;
+			break;
+		case 'd':
+		case 'D':
+			bunnyXPosition+=.1;
+			break;
+		case 'z':
+		case 'Z':
 			if (animator.isAnimating())
 				animator.stop();
 			else 
@@ -218,7 +233,7 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 			break;
 		case '+':
 		case '=':
-			animation_speed *= 1.2f;
+			animation_speed *= 1.2;
 			break;
 		case '-':
 		case '_':
@@ -227,7 +242,6 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		default:
 			break;
 		}
-		canvas.display();
 	}
 	
 	/* GL, display, model transformation, and mouse control variables */
@@ -253,26 +267,21 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 	
 	/* === YOUR WORK HERE === */
 	/* Define more models you need for constructing your scene */
-	private objModel example_model = new objModel("a3_objmodels/dragon.obj");
-	private objModel example_model1 = new objModel("a3_objmodels/armadillo.obj");
-	private objModel example_model2 = new objModel("a3_objmodels/male.obj");
-	private objModel example_model3 = new objModel("a3_objmodels/male.obj");
-	private objModel example_model4 = new objModel("a3_objmodels/bird.obj");
-	private objModel example_model5 = new objModel("a3_objmodels/bird.obj");
-	private objModel example_model6 = new objModel("a3_objmodels/bird.obj");
-	private objModel example_model7 = new objModel("a3_objmodels/bird.obj");
-	private objModel example_model8 = new objModel("a3_objmodels/bird.obj");
-	private objModel example_model9 = new objModel("a3_objmodels/bird.obj");
-	private objModel example_model10 = new objModel("a3_objmodels/bird.obj");
+	private objModel zombie = new objModel("a3_objmodels/male.obj");
+	private objModel bunny = new objModel("a3_objmodels/bunny.obj");
+	
 
 	private float example_rotateT = 0.f;
 	/* Here you should give a conservative estimate of the scene's bounding box
 	 * so that the initViewParameters function can calculate proper
 	 * transformation parameters to display the initial scene.
-	 * If these are not set correctly, the objects may disappear on start.
+	 * If these are not set correctly, the s may disappear on start.
 	 */
 	private float xmin = -10f, ymin = -5f, zmin = -5f;
-	private float xmax = 10f, ymax = 1f, zmax = 5f;	
+	private float xmax = 10f, ymax = 1f, zmax = 100f;	
+	
+	private float objectDistanceZ = -100;
+	private float bunnyXPosition = 0;
 	
 	
 	public void display(GLAutoDrawable drawable) {
@@ -288,112 +297,66 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		gl.glLoadIdentity();
 		
 		/* this is the transformation of the entire scene */
-		gl.glTranslatef(-xpos, -ypos, -zpos);
+		gl.glTranslatef(0, -3, 0);  //sets camera position
 		gl.glTranslatef(centerx, centery, centerz);
 		gl.glRotatef(360.f - roth, 0, 1.0f, 0);
-		gl.glRotatef(rotv, 1.0f, 0, 0);
-		gl.glTranslatef(-centerx, -centery, -centerz);	
+		gl.glRotatef(rotv-5, 1.0f, 0, 0);
+		gl.glTranslatef(-centerx, -centery, -centerz);
+		
+		Texture roadtexture = null;
+		
+		try{
+			InputStream stream = getClass().getResourceAsStream("/resource/hospitalWall.png");
+			TextureData data = TextureIO.newTextureData(stream, false, "png");
+			roadtexture = TextureIO.newTexture(data);
+			}
+			catch (IOException exc){
+				exc.printStackTrace();
+				System.exit(1);
+			}
 
+		//Texture tex = loadTexture("a3_objmodels/sample.png");
+		if(roadtexture != null){
+			//Texture roadtexture = tex;
+			roadtexture.enable();
+			roadtexture.bind();
+			gl.glBegin(gl.GL_QUADS);
+			gl.glTexCoord2d (0.0, 0.0);
+			gl.glVertex3d (-100.0, 0, 0.0);
+			gl.glTexCoord2d (1.0, 0.0);
+			gl.glVertex3d (100.0, 0, 0.0);
+			gl.glTexCoord2d (1.0, 1.0);
+			gl.glVertex3d (100.0, 0, -100.0);
+			gl.glTexCoord2d (0.0, 1.0);
+			gl.glVertex3d (-100.0, 0, -100.0);
+			gl.glEnd ();
+		}
+
+		// move zombies constantly
+		objectDistanceZ+=.5;
 		
-		/* === YOUR WORK HERE === */
-		
-		/* Below is an example of a rotating bunny
-		 * It rotates the bunny with example_rotateT degrees around the bunny's gravity center  
-		 */
-					
-		//Layer 1
+		// Create objects
 		gl.glPushMatrix();	// push the current matrix to stack
-
-		gl.glTranslatef(example_model.center.x, example_model.center.y, example_model.center.z);		
-		gl.glRotatef(example_rotateT, 0, 1, 0);
-		//gl.glTranslatef(-example_model.center.x, -example_model.center.y, -example_model.center.z);
-		/* call objModel::Draw function to draw the model */
-		example_model.Draw();
-		
-		//Layer 2 Right
-		gl.glPushMatrix();		
-		
-		gl.glTranslatef(example_model1.center.x+5, example_model1.center.y-1, example_model1.center.z);		
-		gl.glRotatef(example_rotateT, 0, 1, 0);
-		//gl.glTranslatef(-example_model.center.x, -example_model.center.y, -example_model.center.z);
-		example_model1.Draw();
-		
-		gl.glTranslatef(example_model1.center.x+3, example_model1.center.y-2, example_model1.center.z);		
-		gl.glRotatef(example_rotateT, 0, 1, 0);
-		//gl.glTranslatef(-example_model.center.x, -example_model.center.y, -example_model.center.z);
-		example_model1.Draw();
-		
+		gl.glTranslatef(bunnyXPosition, 1, -8);	
+		gl.glRotated(270, 0, 1, 0);
+		gl.glScalef(1,1,1);
+		bunny.Draw();
 		gl.glPopMatrix();
 		
-		//Layer 2 Left
-		gl.glPushMatrix();
-		
-		gl.glTranslatef(example_model2.center.x-5, example_model2.center.y-1, example_model2.center.z);		
-		gl.glRotatef(example_rotateT, 0, 1, 0);
-		//gl.glTranslatef(-example_model.center.x, -example_model.center.y, -example_model.center.z);
-		example_model2.Draw();
-		
-		//Layer 3
-		gl.glPushMatrix();
-		
-		gl.glTranslatef(example_model3.center.x+3, example_model3.center.y-2, example_model3.center.z);		
-		gl.glRotatef(example_rotateT, 0, 1, 0);
-		//gl.glTranslatef(-example_model2.center.x, -example_model2.center.y, -example_model2.center.z);
-		example_model3.Draw();
-		
-		
-		gl.glPushMatrix();
-		
-		gl.glRotatef(example_rotateT, 1, 0, 0);
-		gl.glTranslatef(example_model4.center.x+1, example_model4.center.y, example_model4.center.z);		
-		//gl.glTranslatef(-example_model2.center.x, -example_model2.center.y, -example_model2.center.z);
-		example_model4.Draw();
-		
-		gl.glPopMatrix();
-		gl.glPushMatrix();
-		
-		gl.glRotatef(example_rotateT, 1, 0, 0);
-		gl.glTranslatef(example_model5.center.x-1, example_model5.center.y, example_model5.center.z);		
-		//gl.glTranslatef(-example_model2.center.x, -example_model2.center.y, -example_model2.center.z);
-		example_model5.Draw();
-		
-		gl.glPopMatrix();
-		gl.glPushMatrix();
-		
-		gl.glRotatef(example_rotateT, 1, 0, 0);
-		gl.glTranslatef(example_model6.center.x, example_model6.center.y, example_model6.center.z+1);		
-		//gl.glTranslatef(-example_model2.center.x, -example_model2.center.y, -example_model2.center.z);
-		example_model6.Draw();
-				
-		gl.glPopMatrix();
-		gl.glPushMatrix();
-		
-		gl.glRotatef(example_rotateT, 1, 0, 0);
-		gl.glTranslatef(example_model7.center.x, example_model7.center.y, example_model7.center.z-1);	
-		//gl.glTranslatef(example_model2.center.x, example_model2.center.y, example_model2.center.z+1);
-		example_model7.Draw();
-		
-		gl.glPopMatrix();
-		gl.glPushMatrix();
-		
-		gl.glRotatef(example_rotateT, 1, 0, 0);
-		gl.glTranslatef(example_model7.center.x, example_model7.center.y+1, example_model7.center.z);	
-		//gl.glTranslatef(example_model2.center.x, example_model2.center.y, example_model2.center.z+1);
-		example_model8.Draw();
-		
-		gl.glPopMatrix();
-		gl.glPushMatrix();
-		
-		gl.glRotatef(example_rotateT, 1, 0, 0);
-		gl.glTranslatef(example_model7.center.x, example_model7.center.y-1, example_model7.center.z);	
-		//gl.glTranslatef(example_model2.center.x, example_model2.center.y, example_model2.center.z+1);
-		example_model9.Draw();
-		
-		gl.glPopMatrix();
-		
-		gl.glPopMatrix();
-		gl.glPopMatrix();
-		gl.glPopMatrix();
+		for( int i=0; i<50; i++){
+			//System.out.println(objectDistanceZ+(i*3));
+			gl.glPushMatrix();	// push the current matrix to stack
+			gl.glTranslatef(2, 2, objectDistanceZ-(i*20));		
+			gl.glScalef(3,3,3);
+			zombie.Draw();
+			gl.glPopMatrix();
+			
+			gl.glPushMatrix();	// push the current matrix to stack
+			gl.glTranslatef(-2, 2, objectDistanceZ-(i*20));		
+			gl.glScalef(3,3,3);
+			zombie.Draw();
+			gl.glPopMatrix();
+		}
 		
 		/* increment example_rotateT */
 		if (animator.isAnimating())
@@ -497,7 +460,7 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		gl.glViewport(0, 0, width, height);
 		gl.glMatrixMode(GL.GL_PROJECTION);
 			gl.glLoadIdentity();
-			glu.gluPerspective(45.f, (float)width/(float)height, znear, zfar);
+			glu.gluPerspective(90, (float)width/(float)height, znear, zfar);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
 	}
 	
@@ -544,6 +507,29 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 	{
 		roth = rotv = 0;
 
+		float ball_r = (float) Math.sqrt((xmax-xmin)*(xmax-xmin)
+							+ (ymax-ymin)*(ymax-ymin)
+							+ (zmax-zmin)*(zmax-zmin)) * 0.707f;
+
+		centerx = (xmax+xmin)/2.f;
+		centery = (ymax+ymin)/2.f;
+		centerz = (zmax+zmin)/2.f;
+		xpos =centerx;
+		ypos = centery;
+		zpos = ball_r/(float) Math.sin(45.f*Math.PI/180.f)+centerz;
+
+		znear = 0.01f;
+		zfar  = 1000.f;
+
+		motionSpeed = 0.002f * ball_r;
+		rotateSpeed = 0.1f;
+
+	}	
+	
+	void secondViewParameters()
+	{
+		roth = rotv = 0;
+		
 		float ball_r = (float) Math.sqrt((xmax-xmin)*(xmax-xmin)
 							+ (ymax-ymin)*(ymax-ymin)
 							+ (zmax-zmin)*(zmax-zmin)) * 0.707f;
