@@ -17,11 +17,13 @@ import javax.vecmath.Vector3f;
 
 import com.sun.opengl.util.BufferUtil;
 import com.sun.opengl.util.FPSAnimator;
+import com.sun.opengl.util.GLUT;
 import com.sun.opengl.util.texture.Texture;
 import com.sun.opengl.util.texture.TextureData;
 import com.sun.opengl.util.texture.TextureIO;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 class Hierarchical extends JFrame implements GLEventListener, KeyListener, MouseListener, MouseMotionListener, ActionListener {
 
@@ -204,6 +206,15 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		case 'T':
 			secondViewParameters();
 			break;
+		case 'a':
+		case 'A':
+			left = true; bunnyAngleAdjust=25; break;
+		case 'd':
+		case 'D':
+			right = true; bunnyAngleAdjust=-25; break;
+		case 'p':
+		case 'P':
+			instructions = false; break;
 		case 'w':
 		case 'W':
 			wireframe = ! wireframe;
@@ -215,14 +226,6 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		case 'f':
 		case 'F':
 			flatshade = !flatshade;
-			break;
-		case 'a':
-		case 'A':
-			bunnyXPosition-=.1;
-			break;
-		case 'd':
-		case 'D':
-			bunnyXPosition+=.1;
 			break;
 		case 'z':
 		case 'Z':
@@ -250,6 +253,8 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 	private final GLU glu = new GLU();	
 	private FPSAnimator animator;
 
+	private GLUT glut = new GLUT();	
+	
 	private int winW = 800, winH = 800;
 	private boolean wireframe = false;
 	private boolean cullface = true;
@@ -269,6 +274,7 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 	/* Define more models you need for constructing your scene */
 	private objModel zombie = new objModel("a3_objmodels/male.obj");
 	private objModel bunny = new objModel("a3_objmodels/bunny.obj");
+	private objModel barrier = new objModel("a3_objmodels/barrier.obj");
 	
 
 	private float example_rotateT = 0.f;
@@ -277,12 +283,17 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 	 * transformation parameters to display the initial scene.
 	 * If these are not set correctly, the s may disappear on start.
 	 */
-	private float xmin = -10f, ymin = -5f, zmin = -5f;
-	private float xmax = 10f, ymax = 1f, zmax = 100f;	
+	
+	private float xmin = -1.5f, ymin = -1.5f, zmin = -1.5f;
+	private float xmax = 1.5f, ymax = 1.5f, zmax = 1.5f;
 	
 	private float objectDistanceZ = -100;
 	private float bunnyXPosition = 0;
+	private float bunnyAngleAdjust = 0;
+	boolean left, right;
+	boolean instructions = true;
 	
+
 	
 	public void display(GLAutoDrawable drawable) {
 		gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
@@ -297,16 +308,18 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		gl.glLoadIdentity();
 		
 		/* this is the transformation of the entire scene */
-		gl.glTranslatef(0, -3, 0);  //sets camera position
+		gl.glTranslatef(-xpos, -7, -zpos);  //sets camera position
+		System.out.println("x: " +xpos +" y: "+ypos+" z: "+zpos);
+		
 		gl.glTranslatef(centerx, centery, centerz);
 		gl.glRotatef(360.f - roth, 0, 1.0f, 0);
-		gl.glRotatef(rotv-5, 1.0f, 0, 0);
+		gl.glRotatef(rotv, 1.0f, 0, 0);
 		gl.glTranslatef(-centerx, -centery, -centerz);
 		
 		Texture roadtexture = null;
 		
 		try{
-			InputStream stream = getClass().getResourceAsStream("/resource/hospitalWall.png");
+			InputStream stream = getClass().getResourceAsStream("/resource/Road.png");
 			TextureData data = TextureIO.newTextureData(stream, false, "png");
 			roadtexture = TextureIO.newTexture(data);
 			}
@@ -322,45 +335,61 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 			roadtexture.bind();
 			gl.glBegin(gl.GL_QUADS);
 			gl.glTexCoord2d (0.0, 0.0);
-			gl.glVertex3d (-100.0, 0, 0.0);
+			gl.glVertex3d (-95.0, 0, 0.0);
 			gl.glTexCoord2d (1.0, 0.0);
-			gl.glVertex3d (100.0, 0, 0.0);
+			gl.glVertex3d (105.0, 0, 0.0);
 			gl.glTexCoord2d (1.0, 1.0);
-			gl.glVertex3d (100.0, 0, -100.0);
+			gl.glVertex3d (105.0, 0, -100.0);
 			gl.glTexCoord2d (0.0, 1.0);
-			gl.glVertex3d (-100.0, 0, -100.0);
+			gl.glVertex3d (-95.0, 0, -100.0);
 			gl.glEnd ();
 		}
+		if(instructions){
+			gl.glBegin(gl.GL_QUADS);
+			//gl.glTexCoord2d (0.0, 0.0);
+			gl.glVertex3d (-100.0,0, -1);
+			//gl.glTexCoord2d (1.0, 0.0);
+			gl.glVertex3d (100.0, 0, -1);
+			//gl.glTexCoord2d (1.0, 1.0);
+			gl.glVertex3d (100, 20, -1);
+			//gl.glTexCoord2d (0.0, 1.0);
+			gl.glVertex3d (-100, 20, -1);
+			gl.glEnd ();
+			
+			gl.glRasterPos3f(0, 10, 0);
+		    glut.glutBitmapString(GLUT.BITMAP_HELVETICA_18, "Instructions");
+		}
 
+		if(left) bunnyXPosition-=.1;
+	    if(right) bunnyXPosition+=.1;
+		
 		// move zombies constantly
 		objectDistanceZ+=.5;
 		
-		// Create objects
-		gl.glPushMatrix();	// push the current matrix to stack
-		gl.glTranslatef(bunnyXPosition, 1, -8);	
-		gl.glRotated(270, 0, 1, 0);
-		gl.glScalef(1,1,1);
-		bunny.Draw();
-		gl.glPopMatrix();
-		
+		drawBunny();
+
 		for( int i=0; i<50; i++){
-			//System.out.println(objectDistanceZ+(i*3));
-			gl.glPushMatrix();	// push the current matrix to stack
-			gl.glTranslatef(2, 2, objectDistanceZ-(i*20));		
-			gl.glScalef(3,3,3);
-			zombie.Draw();
-			gl.glPopMatrix();
-			
-			gl.glPushMatrix();	// push the current matrix to stack
-			gl.glTranslatef(-2, 2, objectDistanceZ-(i*20));		
-			gl.glScalef(3,3,3);
-			zombie.Draw();
-			gl.glPopMatrix();
+				gl.glPushMatrix(); // push the current matrix to stack
+				gl.glTranslatef(2, 2, objectDistanceZ - (i * 20));
+				gl.glScalef(3, 3, 3);
+				zombie.Draw();
+				gl.glPopMatrix();
+
+				gl.glPushMatrix(); // push the current matrix to stack
+				gl.glTranslatef(-2, 2, objectDistanceZ - (i * 20));
+				gl.glScalef(3, 3, 3);
+				zombie.Draw();
+				gl.glPopMatrix();
 		}
 		
 		/* increment example_rotateT */
 		if (animator.isAnimating())
 			example_rotateT += 1.0f * animation_speed;
+		
+		gl.glRasterPos3f(-200, 200, -200);
+	    glut.glutBitmapString(GLUT.BITMAP_HELVETICA_18, "Score: ");
+	    gl.glRasterPos3f(-200, 190, -200);
+	    glut.glutBitmapString(GLUT.BITMAP_HELVETICA_18, "Distance: " + objectDistanceZ);
 	}	
 	
 	public Hierarchical() {
@@ -383,6 +412,15 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 	public static void main(String[] args) {
 
 		new Hierarchical();
+	}
+	
+	public void drawBunny(){
+		gl.glPushMatrix();	// push the current matrix to stack
+		gl.glTranslatef(bunnyXPosition, 1, -8);	
+		gl.glRotated(270+bunnyAngleAdjust, 0, 1, 0);
+		gl.glScalef(1,1,1);
+		bunny.Draw();
+		gl.glPopMatrix();
 	}
 	
 	public void init(GLAutoDrawable drawable) {
@@ -476,6 +514,32 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		canvas.display();
 	}	
 	
+	/* computes optimal transformation parameters for OpenGL rendering.
+	 * this is based on an estimate of the scene's bounding box
+	 */	
+	void initViewParameters()
+	{
+		roth = rotv = 0;
+
+		float ball_r = (float) Math.sqrt((xmax-xmin)*(xmax-xmin)
+							+ (ymax-ymin)*(ymax-ymin)
+							+ (zmax-zmin)*(zmax-zmin)) * 0.707f;
+
+		centerx = (xmax+xmin)/2.f;
+		centery = (ymax+ymin)/2.f;
+		centerz = (zmax+zmin)/2.f;
+		xpos = centerx;
+		ypos = centery;
+		zpos = ball_r/(float) Math.sin(45.f*Math.PI/180.f)+centerz;
+
+		znear = 0.01f;
+		zfar  = 1000.f;
+
+		motionSpeed = 0.002f * ball_r;
+		rotateSpeed = 0.1f;
+
+	}	
+	
 	public void mouseDragged(MouseEvent e) {
 		int x = e.getX();
 		int y = e.getY();
@@ -499,33 +563,6 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		}
 	}
 
-	
-	/* computes optimal transformation parameters for OpenGL rendering.
-	 * this is based on an estimate of the scene's bounding box
-	 */	
-	void initViewParameters()
-	{
-		roth = rotv = 0;
-
-		float ball_r = (float) Math.sqrt((xmax-xmin)*(xmax-xmin)
-							+ (ymax-ymin)*(ymax-ymin)
-							+ (zmax-zmin)*(zmax-zmin)) * 0.707f;
-
-		centerx = (xmax+xmin)/2.f;
-		centery = (ymax+ymin)/2.f;
-		centerz = (zmax+zmin)/2.f;
-		xpos =centerx;
-		ypos = centery;
-		zpos = ball_r/(float) Math.sin(45.f*Math.PI/180.f)+centerz;
-
-		znear = 0.01f;
-		zfar  = 1000.f;
-
-		motionSpeed = 0.002f * ball_r;
-		rotateSpeed = 0.1f;
-
-	}	
-	
 	void secondViewParameters()
 	{
 		roth = rotv = 0;
@@ -551,8 +588,22 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 	
 	// these event functions are not used for this assignment
 	public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) { }
-	public void keyTyped(KeyEvent e) { }
-	public void keyReleased(KeyEvent e) { }
+	public void keyTyped(KeyEvent e) {}
+	
+	public void keyReleased(KeyEvent e) {
+		switch (e.getKeyCode()) {
+
+		case 'a':
+		case 'A':
+			left = false;
+			break;
+		case 'd':
+		case 'D':
+			right = false;
+			break;
+		}
+		bunnyAngleAdjust=0;
+	}
 	public void mouseMoved(MouseEvent e) { }
 	public void actionPerformed(ActionEvent e) { }
 	public void mouseClicked(MouseEvent e) { }
