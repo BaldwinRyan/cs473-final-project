@@ -214,7 +214,7 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 			right = true; bunnyAngleAdjust=-25; break;
 		case 'p':
 		case 'P':
-			instructions = false; break;
+			instructions = false; animator.start(); break;
 		case 'w':
 		case 'W':
 			wireframe = ! wireframe;
@@ -293,7 +293,7 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 	boolean left, right;
 	boolean instructions = true;
 	
-
+	
 	
 	public void display(GLAutoDrawable drawable) {
 		gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
@@ -343,30 +343,38 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 			gl.glTexCoord2d (0.0, 1.0);
 			gl.glVertex3d (-95.0, 0, -100.0);
 			gl.glEnd ();
+			roadtexture.disable();
 		}
 		if(instructions){
 			gl.glBegin(gl.GL_QUADS);
 			//gl.glTexCoord2d (0.0, 0.0);
-			gl.glVertex3d (-100.0,0, -1);
+			gl.glVertex3d (-50.0,0, -1);
 			//gl.glTexCoord2d (1.0, 0.0);
-			gl.glVertex3d (100.0, 0, -1);
+			gl.glVertex3d (50.0, 0, -1);
 			//gl.glTexCoord2d (1.0, 1.0);
-			gl.glVertex3d (100, 20, -1);
+			gl.glVertex3d (50, 20, -1);
 			//gl.glTexCoord2d (0.0, 1.0);
-			gl.glVertex3d (-100, 20, -1);
+			gl.glVertex3d (-50, 20, -1);
 			gl.glEnd ();
 			
-			gl.glRasterPos3f(0, 10, 0);
-		    glut.glutBitmapString(GLUT.BITMAP_HELVETICA_18, "Instructions");
+			gl.glColor3f(1,0,0);// RED
+			//gl.glRasterPos3f(0, 10, 0);
+			gl.glWindowPos2d(100, 400);
+		    glut.glutBitmapString(GLUT.BITMAP_HELVETICA_18, "Instructions ---- Left: A, Right: D, Pause: Z, Press 'P' to begin game");
 		}
 
-		if(left) bunnyXPosition-=.1;
-	    if(right) bunnyXPosition+=.1;
+		if(left) bunnyXPosition-=.2;
+	    if(right) bunnyXPosition+=.2;
 		
 		// move zombies constantly
 		objectDistanceZ+=.5;
 		
-		drawBunny();
+		gl.glPushMatrix();	// push the current matrix to stack
+		gl.glTranslatef(bunnyXPosition, 1, -8);	
+		gl.glRotated(270+bunnyAngleAdjust, 0, 1, 0);
+		gl.glScalef(1,1,1);
+		bunny.Draw();
+		gl.glPopMatrix();
 
 		for( int i=0; i<50; i++){
 				gl.glPushMatrix(); // push the current matrix to stack
@@ -405,22 +413,12 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setVisible(true);
-		animator.start();
 		canvas.requestFocus();
 	}
 	
 	public static void main(String[] args) {
 
 		new Hierarchical();
-	}
-	
-	public void drawBunny(){
-		gl.glPushMatrix();	// push the current matrix to stack
-		gl.glTranslatef(bunnyXPosition, 1, -8);	
-		gl.glRotated(270+bunnyAngleAdjust, 0, 1, 0);
-		gl.glScalef(1,1,1);
-		bunny.Draw();
-		gl.glPopMatrix();
 	}
 	
 	public void init(GLAutoDrawable drawable) {
@@ -440,8 +438,8 @@ class Hierarchical extends JFrame implements GLEventListener, KeyListener, Mouse
 
 	    //red light
 	    float light1_position[] = { -.1f, .1f, 0, 0 };
-	    float light1_diffuse[] = { .6f, .05f, .05f, 1 };
-	    float light1_specular[] = { .6f, .05f, .05f, 1 };
+	    float light1_diffuse[] = { 1, 1, 1, 1 };
+	    float light1_specular[] = { 1, 1, 1, 1 };
 	    gl.glLightfv( GL.GL_LIGHT1, GL.GL_POSITION, light1_position, 0);
 	    gl.glLightfv( GL.GL_LIGHT1, GL.GL_DIFFUSE, light1_diffuse, 0);
 	    gl.glLightfv( GL.GL_LIGHT1, GL.GL_SPECULAR, light1_specular, 0);
